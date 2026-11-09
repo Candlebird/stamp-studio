@@ -7,7 +7,7 @@
 <meta name="description" content="Arrange photos and turn them into painted postage stamps, right in your browser.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📮</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Anton&family=Barlow+Semi+Condensed:wght@700&family=Bebas+Neue&family=Cinzel:wght@700&family=Josefin+Sans:wght@700&family=Limelight&family=Lobster&family=Oswald:wght@700&family=Pacifico&family=Playfair+Display:wght@700&family=Righteous&family=Rye&display=swap" rel="stylesheet">
 <style>
 :root { --bg:#f3f0ea; --panel:#fffdf9; --ink:#2b2823; --soft:#716a5f; --line:#ddd6ca; --accent:#b4472e; --accent-ink:#fff; }
 * { box-sizing:border-box; }
@@ -139,6 +139,10 @@ button.primary { background:var(--accent); border-color:var(--accent); color:var
   <label><span>Title</span><input id="title" type="text" placeholder="GLACIER" maxlength="24"></label>
   <label><span>Subtitle</span><input id="subtitle" type="text" placeholder="NATIONAL PARK" maxlength="40"></label>
   <label><span>Value</span><input id="value" type="text" placeholder="10¢" maxlength="8"></label>
+  <label><span>Title font</span><select id="titleFont"></select></label>
+  <label><span>Subtitle font</span><select id="subFont"></select></label>
+  <label><span>Value font</span><select id="valueFont"></select></label>
+  <label class="check"><input id="caps" type="checkbox" checked> All capitals</label>
   <label><span>Text color</span><input id="textColor" type="color" value="#f4ead0"></label>
   <label><span>Title size <output id="titleSizeOut">100%</output></span><input id="titleSize" type="range" min="50" max="200" value="100"></label>
   <label><span>Subtitle size <output id="subSizeOut">100%</output></span><input id="subSize" type="range" min="50" max="200" value="100"></label>
@@ -173,7 +177,39 @@ const NAMES = {
   'philippines': ['PHILIPPINES', ''], 'sedona-cathedral-rock': ['SEDONA', 'CATHEDRAL ROCK'],
   'tucson-botanical-gardens': ['TUCSON', 'BOTANICAL GARDENS'], 'university-of-arizona': ['ARIZONA', 'OLD MAIN'],
 };
-const FONT = ['Bahnschrift', 'Barlow Semi Condensed', 'Arial Narrow', 'Impact', 'sans-serif'].map(f => f.includes(' ') ? `"${f}"` : f).join(', ');
+// Fonts for the stamp text. Web fonts come from Google Fonts (see the <link>
+// in <head>) and download only when picked. "load" is the web font to wait
+// for before redrawing; the classic stack prefers Bahnschrift on Windows.
+const FONTS = [
+  { name: 'Classic (Bahnschrift)', stack: ['Bahnschrift', 'Barlow Semi Condensed', 'Arial Narrow', 'Impact'], load: 'Barlow Semi Condensed', weight: 700, fallback: 'sans-serif' },
+  { name: 'Oswald', weight: 700, fallback: 'sans-serif' },
+  { name: 'Bebas Neue', weight: 400, fallback: 'sans-serif' },
+  { name: 'Anton', weight: 400, fallback: 'sans-serif' },
+  { name: 'Josefin Sans', weight: 700, fallback: 'sans-serif' },
+  { name: 'Righteous', weight: 400, fallback: 'sans-serif' },
+  { name: 'Limelight', weight: 400, fallback: 'serif' },
+  { name: 'Playfair Display', weight: 700, fallback: 'serif' },
+  { name: 'Abril Fatface', weight: 400, fallback: 'serif' },
+  { name: 'Cinzel', weight: 700, fallback: 'serif' },
+  { name: 'Alfa Slab One', weight: 400, fallback: 'serif' },
+  { name: 'Rye', weight: 400, fallback: 'serif' },
+  { name: 'Lobster', weight: 400, fallback: 'cursive' },
+  { name: 'Pacifico', weight: 400, fallback: 'cursive' },
+];
+const quote = f => `"${f}"`;
+for (const f of FONTS) f.family = [...(f.stack || [f.name]).map(quote), f.fallback].join(', ');
+const fontCss = (i, size) => `${FONTS[i].weight} ${size}px ${FONTS[i].family}`;
+for (const id of ['titleFont', 'subFont', 'valueFont']) {
+  FONTS.forEach((f, i) => {
+    const o = new Option(f.name, i);
+    o.style.fontFamily = f.family;
+    $(id).append(o);
+  });
+}
+// a picked font may still be downloading: redraw once it has arrived
+function loadFont(i) {
+  document.fonts.load(`${FONTS[i].weight} 40px ${quote(FONTS[i].load || FONTS[i].name)}`).then(compose, () => {});
+}
 
 function cover(img) { return Math.max(W / img.width, H / img.height); }
 
@@ -319,6 +355,9 @@ const PCT = { titleSize: '%', subSize: '%', textX: '%', textY: '%', shadow: '' }
 for (const id of ['title', 'subtitle', 'value', 'textColor', 'border', 'borderColor', 'valueCorner', ...Object.keys(PCT)])
   $(id).oninput = () => { if (id in PCT) $(id + 'Out').textContent = $(id).value + PCT[id]; compose(); };
 $('valueCorner').onchange = $('valueCorner').oninput;
+$('caps').oninput = compose;
+for (const id of ['titleFont', 'subFont', 'valueFont'])
+  $(id).oninput = $(id).onchange = () => { compose(); loadFont(+$(id).value); };
 
 // drag the title block on the preview: moving it the width of the stamp moves
 // the slider end to end
@@ -362,17 +401,27 @@ function markStale() {
 
 function say(text, bad) { $('status').textContent = text; $('status').classList.toggle('bad', !!bad); }
 
-function fitText(c, text, size, maxW, stretch) {
+function fitText(c, text, size, maxW, stretch, f) {
   c.fontStretch = stretch;
-  c.font = `bold ${size}px ${FONT}`;
+  c.font = fontCss(f, size);
   const w = c.measureText(text).width;
-  if (w > maxW) { size = Math.floor(size * maxW / w); c.font = `bold ${size}px ${FONT}`; }
+  if (w > maxW) { size = Math.floor(size * maxW / w); c.font = fontCss(f, size); }
   return size;
 }
 
+// how far a line reaches above and below its baseline, so tall or loopy
+// fonts don't collide with the next line
+function extent(c, text, s, rise, after) {
+  const mt = c.measureText(text);
+  return { rise: Math.max(rise, mt.actualBoundingBoxAscent || 0),
+           after: Math.max(after, (mt.actualBoundingBoxDescent || 0) + s * 0.04) };
+}
+
 function drawText(c, w, h) {
-  const title = $('title').value.trim().toUpperCase(), sub = $('subtitle').value.trim().toUpperCase();
+  const caps = t => $('caps').checked ? t.toUpperCase() : t;
+  const title = caps($('title').value.trim()), sub = caps($('subtitle').value.trim());
   const value = $('value').value.trim();
+  const tf = +$('titleFont').value, sf = +$('subFont').value, vf = +$('valueFont').value;
   const m = w * 0.045;                              // margin inside the picture
   c.save();
   c.fillStyle = $('textColor').value;
@@ -386,15 +435,15 @@ function drawText(c, w, h) {
   const lines = [];
   if (title) {
     c.letterSpacing = (h * 0.004) + 'px';
-    const s = fitText(c, title, h * 0.16 * $('titleSize').value / 100, w - 2 * m, 'semi-condensed');
-    lines.push({ text: title, size: s, stretch: 'semi-condensed', spacing: h * 0.004, width: c.measureText(title).width,
-                 rise: s * 0.86, after: s * 0.08 });
+    const s = fitText(c, title, h * 0.16 * $('titleSize').value / 100, w - 2 * m, 'semi-condensed', tf);
+    lines.push({ text: title, size: s, font: tf, stretch: 'semi-condensed', spacing: h * 0.004, width: c.measureText(title).width,
+                 ...extent(c, title, s, s * 0.86, s * 0.08) });
   }
   if (sub) {
     c.letterSpacing = (h * 0.006) + 'px';
-    const s = fitText(c, sub, h * 0.065 * $('subSize').value / 100, w - 2 * m, 'normal');
-    lines.push({ text: sub, size: s, stretch: 'normal', spacing: h * 0.006, width: c.measureText(sub).width,
-                 rise: s * 0.95, after: s * 0.08 });
+    const s = fitText(c, sub, h * 0.065 * $('subSize').value / 100, w - 2 * m, 'normal', sf);
+    lines.push({ text: sub, size: s, font: sf, stretch: 'normal', spacing: h * 0.006, width: c.measureText(sub).width,
+                 ...extent(c, sub, s, s * 0.95, s * 0.08) });
   }
   if (lines.length) {
     const blockH = lines.reduce((t, l) => t + l.rise + l.after, 0);
@@ -403,14 +452,14 @@ function drawText(c, w, h) {
     let y = m * 0.8 + (h - 1.6 * m - blockH) * $('textY').value / 100;
     c.textAlign = 'center';
     for (const l of lines) {
-      c.fontStretch = l.stretch; c.font = `bold ${l.size}px ${FONT}`; c.letterSpacing = l.spacing + 'px';
+      c.fontStretch = l.stretch; c.font = fontCss(l.font, l.size); c.letterSpacing = l.spacing + 'px';
       y += l.rise; c.fillText(l.text, cx, y); y += l.after;
     }
   }
   if (value) {
     const corner = $('valueCorner').value;
     c.letterSpacing = '0px';
-    const s = fitText(c, value, h * 0.14, w * 0.4, 'condensed');
+    const s = fitText(c, value, h * 0.14, w * 0.4, 'condensed', vf);
     const right = corner.endsWith('r');
     c.textAlign = right ? 'right' : 'left';
     c.fillText(value, right ? w - w * 0.04 : w * 0.04, corner.startsWith('b') ? h - h * 0.04 : h * 0.04 + s * 0.8);
@@ -530,7 +579,7 @@ fetch('photos/photos.json').then(r => r.json()).then(folders => {
   }
 }).catch(() => say('Could not list the stamp photos.', true));
 // redraw the text once the web font arrives (used where Bahnschrift isn't installed)
-document.fonts.load('bold 40px "Barlow Semi Condensed"').then(compose, () => {});
+loadFont(0);
 draw();
 </script>
 </body>
