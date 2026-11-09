@@ -1,0 +1,63 @@
+[
+ {
+  "name": "glacier-national-park",
+  "photos": [
+   "glacier-national-park/mine-alpine-lake.jpg",
+   "glacier-national-park/mine-burned-forest-turquoise-lake.jpg",
+   "glacier-national-park/mine-snow-peaks-valley.jpg",
+   "glacier-national-park/wild-goose-island-reflection.jpg",
+   "glacier-national-park/wild-goose-island.jpg"
+  ]
+ },
+ {
+  "name": "mexico",
+  "photos": [
+   "mexico/chichen-itza.jpg",
+   "mexico/mine-flag-on-waterfront.jpg",
+   "mexico/mine-gazebo-at-night.jpg",
+   "mexico/mine-mayan-pyramid.jpg",
+   "mexico/mine-mosaic-stairs-papel-picado.jpg",
+   "mexico/mine-mule-and-colorful-steps.jpg",
+   "mexico/mine-stone-calendar.jpg"
+  ]
+ },
+ {
+  "name": "philippines",
+  "photos": [
+   "philippines/chocolate-hills-close.jpg",
+   "philippines/chocolate-hills-sky.jpg",
+   "philippines/mayon-volcano.jpg",
+   "philippines/mine-flag-and-monument-sunset.jpg",
+   "philippines/mine-limestone-lagoon.jpg"
+  ]
+ },
+ {
+  "name": "sedona-cathedral-rock",
+  "photos": [
+   "sedona-cathedral-rock/cathedral-rock-desert.jpg",
+   "sedona-cathedral-rock/cathedral-rock-spires.jpg",
+   "sedona-cathedral-rock/cathedral-rock-storm-clouds.jpg",
+   "sedona-cathedral-rock/cathedral-rock-up-close.jpg",
+   "sedona-cathedral-rock/red-rock-crossing.jpg"
+  ]
+ },
+ {
+  "name": "tucson-botanical-gardens",
+  "photos": [
+   "tucson-botanical-gardens/butterfly-on-flower.jpg",
+   "tucson-botanical-gardens/garden-chairs.jpg",
+   "tucson-botanical-gardens/monarch-butterfly.jpg",
+   "tucson-botanical-gardens/owl-butterfly.jpg",
+   "tucson-botanical-gardens/pink-flowers.jpg",
+   "tucson-botanical-gardens/saguaro.jpg"
+  ]
+ },
+ {
+  "name": "university-of-arizona",
+  "photos": [
+   "university-of-arizona/old-main-brick.jpg",
+   "university-of-arizona/old-main-front.jpg",
+   "university-of-arizona/old-main-monsoon.jpg"
+  ]
+ }
+]
